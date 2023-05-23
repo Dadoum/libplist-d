@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/libplist-d
+libplist-d.so
+libplist-d.dylib
+libplist-d.dll
+libplist-d.a
+libplist-d.lib
+libplist-d-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst

@@ -1,0 +1,20 @@
+{
+    "name": "plist-d",
+    "description": "Poorly made libplist wrapper for the D language",
+    "license": "Boost",
+    "authors": [
+        "Dadoum"
+    ],
+    "copyright": "Copyright © 2023, Dadoum",
+    "targetType": "library",
+
+    "configurations": [
+        {
+            "name": "static"
+        },
+        {
+            "name": "dynamic",
+            "versions": ["LibPlistDynamic"]
+        }
+    ]
+}
