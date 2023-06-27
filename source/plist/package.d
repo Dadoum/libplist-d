@@ -63,6 +63,12 @@ public abstract class Plist {
         return obj;
     }
 
+    public static Plist fromMemory(ubyte[] bin) {
+        plist_t handle;
+        plist_from_memory(cast(const char*) bin.ptr, cast(uint) bin.length, &handle);
+        return wrap(handle);
+    }
+
     public static Plist fromXml(string xml) {
         plist_t handle;
         plist_from_xml(cast(const char*) xml.ptr, cast(uint) xml.length, &handle);
