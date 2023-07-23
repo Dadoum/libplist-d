@@ -1,6 +1,8 @@
 module plist;
 
 import core.stdc.stdlib;
+
+import std.datetime;
 import std.traits;
 import std.string;
 import std.range;
@@ -462,6 +464,14 @@ class PlistDate: Plist {
     // public this() {
     //     this(plist_new_date(), true);
     // }
+
+    DateTime native() {
+        int sec;
+        int usec;
+        plist_get_date_val(handle, &sec, &usec);
+
+        return DateTime(2001, 1, 1) + dur!"seconds"(sec) + dur!"usecs"(usec);
+    }
 }
 
 class PlistData: Plist {
