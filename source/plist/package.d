@@ -344,6 +344,10 @@ class PlistDict: Plist {
         return length();
     }
 
+    public Plist opBinaryRight(string op = "in")(string key) {
+        return Plist.wrap(plist_dict_get_item(handle, key.toStringz), false);
+    }
+
     public override Plist opIndex(string key) {
         auto item = plist_dict_get_item(handle, key.toStringz);
         if (item) {
