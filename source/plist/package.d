@@ -25,6 +25,10 @@ public abstract class Plist {
     }
 
     public static Plist wrap(plist_t handle, bool owns = true) {
+        if (!handle) {
+            return null;
+        }
+
         Plist obj;
         with (PlistType) final switch (plist_get_node_type(handle)) {
             case PLIST_BOOLEAN:
@@ -106,74 +110,32 @@ public abstract class Plist {
         return xml;
     }
 
-    PlistBoolean boolean() {
-        if (handle == null) {
-            return null;
+    mixin template MakeEasyCast(PlistRet, string name) {
+        PlistRet _() {
+            if (handle) {
+                PlistRet res = cast(PlistRet) this;
+                if (res) {
+                    return res;
+                }
+            }
+            throw new InvalidCastException(this);
         }
-        return cast(PlistBoolean) this;
+        mixin("alias " ~ name ~ " = _;");
     }
 
-    PlistUint uinteger() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistUint) this;
-    }
+    mixin MakeEasyCast!(PlistBoolean, "boolean");
+    mixin MakeEasyCast!(PlistUint, "uinteger");
+    mixin MakeEasyCast!(PlistReal, "real_");
+    mixin MakeEasyCast!(PlistString, "str");
+    mixin MakeEasyCast!(PlistArray, "array");
+    mixin MakeEasyCast!(PlistDict, "dict");
+    mixin MakeEasyCast!(PlistDate, "date");
+    mixin MakeEasyCast!(PlistData, "data");
+    mixin MakeEasyCast!(PlistKey, "key");
+    mixin MakeEasyCast!(PlistUid, "uid");
 
-    PlistReal real_() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistReal) this;
-    }
-
-    PlistString str() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistString) this;
-    }
-
-    PlistArray array() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistArray) this;
-    }
-
-    PlistDict dict() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistDict) this;
-    }
-
-    PlistDate date() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistDate) this;
-    }
-
-    PlistData data() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistData) this;
-    }
-
-    PlistKey key() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistKey) this;
-    }
-
-    PlistUid uid() {
-        if (handle == null) {
-            return null;
-        }
-        return cast(PlistUid) this;
+    public Plist opIndex(string key) {
+        throw new InvalidCastException(this);
     }
 }
 
@@ -199,6 +161,8 @@ public class PlistBoolean: Plist {
     public auto native() {
         return cast(bool) this;
     }
+
+    alias native this;
 }
 
 class PlistUint: Plist {
@@ -223,6 +187,8 @@ class PlistUint: Plist {
     public auto native() {
         return cast(ulong) this;
     }
+
+    alias native this;
 }
 
 class PlistReal: Plist {
@@ -247,6 +213,8 @@ class PlistReal: Plist {
     public auto native() {
         return cast(double) this;
     }
+
+    alias native this;
 }
 
 class PlistString: Plist {
@@ -273,6 +241,8 @@ class PlistString: Plist {
     public auto native() {
         return cast(string) this;
     }
+
+    alias native this;
 }
 
 class PlistArray: Plist {
@@ -374,9 +344,13 @@ class PlistDict: Plist {
         return length();
     }
 
-    public Plist opIndex(string key) {
+    public override Plist opIndex(string key) {
         auto item = plist_dict_get_item(handle, key.toStringz);
-        return item ? Plist.wrap(item, false) : null;
+        if (item) {
+            return Plist.wrap(item, false);
+        } else {
+            throw new InvalidIndexException(key);
+        }
     }
 
     public void opIndexAssign(Plist element, string key) {
@@ -465,7 +439,7 @@ class PlistDate: Plist {
     //     this(plist_new_date(), true);
     // }
 
-    DateTime native() {
+    public DateTime native() {
         int sec;
         int usec;
         plist_get_date_val(handle, &sec, &usec);
@@ -569,4 +543,16 @@ pragma(inline, true) PlistDict dict(Args...)(Args args) {
         }
     }
     return dict;
+}
+
+class InvalidIndexException: Exception {
+    this(string key, string file = __FILE__, size_t line = __LINE__) {
+        super(format!"No entry with index `%s` has been found."(key), file, line);
+    }
+}
+
+class InvalidCastException: Exception {
+    this(Plist plist, string file = __FILE__, size_t line = __LINE__) {
+        super(format!"Object is a `%s`, and cannot be converted into the specified type."(typeid(plist)), file, line);
+    }
 }
