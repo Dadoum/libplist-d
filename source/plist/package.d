@@ -12,8 +12,8 @@ import plist.c;
 public alias PlistType = plist_type;
 
 public abstract class Plist {
-    private plist_t handle;
-    private bool owns;
+    plist_t handle;
+    bool owns;
 
     this(plist_t handle, bool owns) {
         this.handle = handle;
