@@ -1,7 +1,5 @@
 module plist.c;
 
-version = LibPlistDynamic;
-
 /**
  * @file plist/plist.h
  * @brief Main include of libplist
@@ -26,78 +24,18 @@ version = LibPlistDynamic;
  */
 
 import core.stdc.stdarg;
+import dynamicloader;
 
-private enum PlistImport;
-
-bool isNewPlist = false;
-
-version (LibPlistDynamic) {
-    import core.sys.posix.dlfcn;
-    import core.stdc.stdlib;
-    import std.traits: getSymbolsByUDA, ReturnType, Parameters;
-    import std.stdio;
-
-    template delegateStorage(string name) {
-        __gshared void* delegateStorage;
-    }
-
-    private __gshared void* libplistHandle;
-
-    shared static this() {
-        static foreach (libplistName; ["libplist.so.3", "libplist-2.0.so.3"]) {
-            libplistHandle = dlopen(libplistName, RTLD_LAZY);
-            if (libplistHandle) {
-                return;
-            }
-        }
-        static foreach (libplistName; ["libplist.so.4", "libplist-2.0.so.4"]) {
-            libplistHandle = dlopen(libplistName, RTLD_LAZY);
-            if (libplistHandle) {
-                isNewPlist = true;
-                return;
-            }
-        }
-        stderr.writeln("libplist is not available on this machine. Aborting. ");
-        abort();
-    }
-
-    mixin template implementSymbol(alias symbol) {
-        static if (is(typeof(symbol) == function)) {
-            alias DelT = typeof(&symbol);
-            enum funcName = __traits(identifier, symbol);
-            alias del = delegateStorage!funcName;
-
-            shared static this() {
-                del = dlsym(libplistHandle, funcName);
-                if (del == null) {
-                    switch (funcName) { // new plist
-                        case "plist_to_xml_free":
-                        case "plist_to_bin_free":
-                            del = dlsym(libplistHandle, "plist_mem_free");
-                            break;
-                        case "plist_dict_insert_item":
-                            del = dlsym(libplistHandle, "plist_dict_set_item");
-                            break;
-                        default:
-                            stderr.writeln("libplist doesn't have " ~ funcName ~ ". Aborting. ");
-                            abort();
-                    }
-                }
-            }
-
-            pragma(mangle, symbol.mangleof)
-            extern (C) ReturnType!symbol impl(Parameters!symbol params) @(__traits(getAttributes, symbol)) {
-                return (cast(DelT) del)(params);
-            }
-        }
-    }
-
-    static foreach (symbol; getSymbolsByUDA!(__traits(parent, {}), PlistImport)) {
-        mixin implementSymbol!symbol;
-    }
+version (Windows) {
+    enum libplist = LibImport("libplist-2.0.dll");
+} else version (OSX) {
+    enum libplist = LibImport("libplist-2.0.3.dylib", "libplist-2.0.4.dylib");
+} else {
+    enum libplist = LibImport("libplist-2.0.so.3", "libplist.so.3", "libplist-2.0.so.4", "libplist.so.4");
 }
 
-@PlistImport extern (C):
+mixin makeBindings;
+@libplist extern (C):
 
 /**
  * \mainpage libplist : A library to handle Apple Property Lists
@@ -697,14 +635,14 @@ version (NewPlist) {
      *
      * @param plist_xml The buffer allocated by plist_to_xml().
      */
-    void plist_to_xml_free (char* plist_xml);
+    @AlternateName("plist_mem_free") void plist_to_xml_free (char* plist_xml);
 
     /**
      * Frees the memory allocated by plist_to_bin().
      *
      * @param plist_bin The buffer allocated by plist_to_bin().
      */
-    void plist_to_bin_free (char* plist_bin);
+    @AlternateName("plist_mem_free") void plist_to_bin_free (char* plist_bin);
 }
 
 /**

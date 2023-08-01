@@ -8,13 +8,17 @@
     "copyright": "Copyright © 2023, Dadoum",
     "targetType": "library",
 
+    "dependencies": {
+        "dynamic-loader": { "repository": "git+https://github.com/Dadoum/dynamicloader.git", "version": "1731c35bcfdd005781ff49d305dea3baa9150f66" }
+    },
+
     "configurations": [
-        {
-            "name": "static"
-        },
         {
             "name": "dynamic",
             "versions": ["LibPlistDynamic"]
+        },
+        {
+            "name": "static"
         }
     ]
 }
