@@ -463,9 +463,9 @@ class PlistData: Plist {
 
     public ubyte[] opCast(T: ubyte[])() {
         char* ptr;
-        size_t length;
+        ulong length;
         plist_get_data_val(handle, &ptr, &length);
-        auto data = cast(ubyte[]) ptr[0..length].dup;
+        auto data = cast(ubyte[]) ptr[0..cast(size_t) length].dup;
         plist_mem_free(ptr);
         return data;
     }
