@@ -9,7 +9,7 @@
     "targetType": "library",
 
     "dependencies": {
-        "dynamic-loader": { "repository": "git+https://github.com/Dadoum/dynamicloader.git", "version": "1731c35bcfdd005781ff49d305dea3baa9150f66" }
+        "dynamic-loader": { "repository": "git+https://github.com/Dadoum/dynamicloader.git", "version": "a0ef003d63ac087be86c9b6751695901db467e55" }
     },
 
     "configurations": [
