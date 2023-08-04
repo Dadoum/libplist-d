@@ -27,7 +27,11 @@ import core.stdc.stdarg;
 import dynamicloader;
 
 version (Windows) {
-    enum libplist = LibImport("libplist-2.0.dll");
+    version (MinGW) {
+        enum libplist = LibImport("libplist-2.0.dll");
+    } else {
+        enum libplist = LibImport("plist.dll");
+    }
 } else version (OSX) {
     enum libplist = LibImport("libplist-2.0.3.dylib", "libplist-2.0.4.dylib");
 } else {
