@@ -110,6 +110,15 @@ public abstract class Plist {
         return xml;
     }
 
+    public string toBin() {
+        char* bin;
+        uint length;
+        plist_to_bin(handle, &bin, &length);
+        auto binary = cast(string) bin[0..length].dup;
+        plist_to_bin_free(bin);
+        return binary;
+    }
+
     mixin template MakeEasyCast(PlistRet, string name) {
         PlistRet _() {
             if (handle) {
@@ -406,17 +415,19 @@ class PlistDict: Plist {
     }
 
     public void merge(PlistDict dict) {
-        auto iter = dict.iter();
-        string key;
-        Plist element;
-        while (iter.next(element, key)) {
-            if (element.owns) {
-                element.owns = false;
-            } else {
-                element = element.copy();
-            }
-            this[key] = element;
-        }
+        // auto iter = dict.iter();
+        // string key;
+        // Plist element;
+        // while (iter.next(element, key)) {
+        //     if (element.owns) {
+        //         element.owns = false;
+        //     } else {
+        //         element = element.copy();
+        //     }
+        //     this[key] = element;
+        // }
+
+        plist_dict_merge(&handle, dict.handle);
     }
 
     public auto native() {
@@ -431,6 +442,10 @@ class PlistDict: Plist {
             dictionary[key] = val;
         }
         return dictionary;
+    }
+
+    public static PlistKey getKey(Plist item) {
+        return new PlistKey(plist_dict_item_get_key(item.handle), false);
     }
 }
 
@@ -482,6 +497,10 @@ class PlistData: Plist {
 class PlistKey: Plist {
     public this(plist_t handle, bool owns) {
         super(handle, owns);
+    }
+
+    public void opAssign(string key) {
+        plist_set_key_val(handle, key.toStringz);
     }
 }
 
