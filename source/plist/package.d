@@ -170,8 +170,6 @@ public class PlistBoolean: Plist {
     public auto native() {
         return cast(bool) this;
     }
-
-    alias native this;
 }
 
 class PlistUint: Plist {
@@ -196,8 +194,6 @@ class PlistUint: Plist {
     public auto native() {
         return cast(ulong) this;
     }
-
-    alias native this;
 }
 
 class PlistReal: Plist {
@@ -222,8 +218,6 @@ class PlistReal: Plist {
     public auto native() {
         return cast(double) this;
     }
-
-    alias native this;
 }
 
 class PlistString: Plist {
@@ -250,8 +244,6 @@ class PlistString: Plist {
     public auto native() {
         return cast(string) this;
     }
-
-    alias native this;
 }
 
 class PlistArray: Plist {
