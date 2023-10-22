@@ -351,17 +351,6 @@ plist_t plist_dict_item_get_key (plist_t node);
 void plist_dict_set_item (plist_t node, const(char)* key, plist_t item);
 
 /**
- * Insert a new item into a #PLIST_DICT node.
- *
- * @deprecated Deprecated. Use plist_dict_set_item instead.
- *
- * @param node the node of type #PLIST_DICT
- * @param item the new item to insert
- * @param key The identifier of the item to insert.
- */
-void plist_dict_insert_item (plist_t node, const(char)* key, plist_t item);
-
-/**
  * Remove an existing position in a #PLIST_DICT node.
  * Removed position will be freed using #plist_free
  *
