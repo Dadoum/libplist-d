@@ -3,9 +3,10 @@ module plist;
 import core.stdc.stdlib;
 
 import std.datetime;
-import std.traits;
-import std.string;
+import std.meta;
 import std.range;
+import std.string;
+import std.traits;
 
 import plist.c;
 
@@ -143,9 +144,29 @@ public abstract class Plist {
     mixin MakeEasyCast!(PlistKey, "key");
     mixin MakeEasyCast!(PlistUid, "uid");
 
+    static foreach (PlistT; AliasSeq!(PlistBoolean, PlistUint, PlistReal, PlistString, PlistArray, PlistDict, PlistDate, PlistData)) {
+        bool opEquals(NativeType!PlistT elem) {
+            if (handle) {
+                PlistT self_ = cast(PlistT) this;
+                if (self_) {
+                    return cast(typeof(elem)) self_ == elem;
+                }
+            }
+            return false;
+        }
+    }
+
     public Plist opIndex(string key) {
         throw new InvalidCastException(this);
     }
+
+    public override string toString() {
+        return this.toXml(); // I would rather use an OpenSTEP style Plist but it would bump the libplist version requirement.
+    }
+}
+
+template NativeType(PlistT: Plist) {
+    alias NativeType = ReturnType!(PlistT.native);
 }
 
 public class PlistBoolean: Plist {
@@ -167,7 +188,7 @@ public class PlistBoolean: Plist {
         plist_set_bool_val(handle, val);
     }
 
-    public auto native() {
+    public bool native() {
         return cast(bool) this;
     }
 }
@@ -191,7 +212,7 @@ class PlistUint: Plist {
         plist_set_uint_val(handle, cast(ulong) val);
     }
 
-    public auto native() {
+    public ulong native() {
         return cast(ulong) this;
     }
 }
@@ -215,7 +236,7 @@ class PlistReal: Plist {
         plist_set_real_val(handle, cast(double) val);
     }
 
-    public auto native() {
+    public double native() {
         return cast(double) this;
     }
 }
@@ -241,7 +262,7 @@ class PlistString: Plist {
         plist_set_string_val(handle, cast(const char*) val.toStringz);
     }
 
-    public auto native() {
+    public string native() {
         return cast(string) this;
     }
 }
@@ -300,6 +321,25 @@ class PlistArray: Plist {
         }
     }
 
+    int opApply(int delegate(Plist element) del) {
+        scope iterator = iter();
+        Plist val;
+
+        int result = 0;
+        while (iterator.next(val)) {
+            if ((result = del(val)) != 0) {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    int opApply(int delegate(size_t counter, Plist element) del) {
+        size_t counter = 0;
+        return opApply((Plist elem) => del(counter++, elem));
+    }
+
     public PlistArrayIter iter() {
         plist_array_iter iter;
         plist_array_new_iter(handle, &iter);
@@ -313,18 +353,17 @@ class PlistArray: Plist {
         }
     }
 
-    public auto native() {
-        Plist[] array = new Plist[length()];
+    public T opCast(T: Plist[])() {
+        Plist[] array = new Plist[](length());
 
-        auto iterator = iter();
-
-        Plist val;
-        int index = 0;
-
-        while (iterator.next(val)) {
-            array[index++] = val;
+        foreach (idx, elem; this) {
+            array[idx] = elem;
         }
         return array;
+    }
+
+    public Plist[] native() {
+        return cast(Plist[]) this;
     }
 }
 
@@ -407,30 +446,30 @@ class PlistDict: Plist {
     }
 
     public void merge(PlistDict dict) {
-        // auto iter = dict.iter();
-        // string key;
-        // Plist element;
-        // while (iter.next(element, key)) {
-        //     if (element.owns) {
-        //         element.owns = false;
-        //     } else {
-        //         element = element.copy();
-        //     }
-        //     this[key] = element;
-        // }
-
         plist_dict_merge(&handle, dict.handle);
     }
 
-    public auto native() {
-        Plist[string] dictionary;
+    int opApply(int delegate(string key, Plist value) del) {
+        int result = 0;
 
-        auto iterator = iter();
+        scope iterator = iter();
 
         Plist val;
         string key;
 
         while (iterator.next(val, key)) {
+            if ((result = del(key, val)) != 0) {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    public Plist[string] native() {
+        Plist[string] dictionary;
+
+        foreach (key, val; this) {
             dictionary[key] = val;
         }
         return dictionary;
@@ -450,12 +489,16 @@ class PlistDate: Plist {
     //     this(plist_new_date(), true);
     // }
 
-    public DateTime native() {
+    public T opCast(T: DateTime)() {
         int sec;
         int usec;
         plist_get_date_val(handle, &sec, &usec);
 
         return DateTime(2001, 1, 1) + dur!"seconds"(sec) + dur!"usecs"(usec);
+    }
+
+    public DateTime native() {
+        return cast(DateTime) this;
     }
 }
 
@@ -538,7 +581,7 @@ pragma(inline, true) auto pl(T: Plist)(T[] obj) {
     return array;
 }
 
-deprecated("Using pl to convert associative arrays to Plist does not preserve key order.") pragma(inline, true) auto pl(Plist[string] obj) {
+pragma(inline, true) auto pl(Plist[string] obj) {
     auto dict = new PlistDict();
     dict.append(obj);
     return dict;
