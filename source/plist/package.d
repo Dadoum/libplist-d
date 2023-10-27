@@ -144,14 +144,8 @@ public abstract class Plist {
     mixin MakeEasyCast!(PlistKey, "key");
     mixin MakeEasyCast!(PlistUid, "uid");
 
-    static foreach (PlistT; AliasSeq!(PlistBoolean, PlistUint, PlistReal, PlistString, PlistArray, PlistDict, PlistDate, PlistData)) {
-        bool opEquals(NativeType!PlistT elem) {
-            if (handle) {
-                PlistT self_ = cast(PlistT) this;
-                if (self_) {
-                    return cast(typeof(elem)) self_ == elem;
-                }
-            }
+    static foreach (T; AliasSeq!(bool, ulong, double, string, Plist[], Plist[string], DateTime, ubyte[])) {
+        bool opEquals(T elem) {
             return false;
         }
     }
@@ -165,9 +159,10 @@ public abstract class Plist {
     }
 }
 
-template NativeType(PlistT: Plist) {
-    alias NativeType = ReturnType!(PlistT.native);
-}
+// It makes D explodes, like it cannot load the child classes if I use it in Plist
+// template NativeType(PlistT: Plist) {
+//     alias NativeType = ReturnType!(PlistT.native);
+// }
 
 public class PlistBoolean: Plist {
     public this(plist_t handle, bool owns) {
@@ -187,6 +182,11 @@ public class PlistBoolean: Plist {
     public void opAssign(bool val) {
         plist_set_bool_val(handle, val);
     }
+
+    override bool opEquals(bool val) {
+        return native() == val;
+    }
+    alias opEquals = Plist.opEquals;
 
     public bool native() {
         return cast(bool) this;
@@ -212,6 +212,11 @@ class PlistUint: Plist {
         plist_set_uint_val(handle, cast(ulong) val);
     }
 
+    override bool opEquals(ulong val) {
+        return native() == val;
+    }
+    alias opEquals = Plist.opEquals;
+
     public ulong native() {
         return cast(ulong) this;
     }
@@ -235,6 +240,11 @@ class PlistReal: Plist {
     public void opAssign(T)(T val) if (isFloatingPoint!T) {
         plist_set_real_val(handle, cast(double) val);
     }
+
+    override bool opEquals(double val) {
+        return native() == val;
+    }
+    alias opEquals = Plist.opEquals;
 
     public double native() {
         return cast(double) this;
@@ -261,6 +271,11 @@ class PlistString: Plist {
     public void opAssign(T)(T val) if (isSomeString!T) {
         plist_set_string_val(handle, cast(const char*) val.toStringz);
     }
+
+    override bool opEquals(string val) {
+        return native() == val;
+    }
+    alias opEquals = Plist.opEquals;
 
     public string native() {
         return cast(string) this;
@@ -353,7 +368,7 @@ class PlistArray: Plist {
         }
     }
 
-    public T opCast(T: Plist[])() {
+    public T opCast(T = Plist[])() {
         Plist[] array = new Plist[](length());
 
         foreach (idx, elem; this) {
@@ -361,6 +376,11 @@ class PlistArray: Plist {
         }
         return array;
     }
+
+    override bool opEquals(Plist[] val) {
+        return native() == val;
+    }
+    alias opEquals = Plist.opEquals;
 
     public Plist[] native() {
         return cast(Plist[]) this;
@@ -466,6 +486,11 @@ class PlistDict: Plist {
         return result;
     }
 
+    override bool opEquals(Plist[string] val) {
+        return native() == val;
+    }
+    alias opEquals = Plist.opEquals;
+
     public Plist[string] native() {
         Plist[string] dictionary;
 
@@ -497,6 +522,11 @@ class PlistDate: Plist {
         return DateTime(2001, 1, 1) + dur!"seconds"(sec) + dur!"usecs"(usec);
     }
 
+    override bool opEquals(DateTime val) {
+        return native() == val;
+    }
+    alias opEquals = Plist.opEquals;
+
     public DateTime native() {
         return cast(DateTime) this;
     }
@@ -523,6 +553,11 @@ class PlistData: Plist {
     public void opAssign(ubyte[] val) {
         plist_set_data_val(handle, cast(const char*) val.ptr, val.length);
     }
+
+    override bool opEquals(ubyte[] val) {
+        return native() == val;
+    }
+    alias opEquals = Plist.opEquals;
 
     public auto native() {
         return cast(ubyte[]) this;
