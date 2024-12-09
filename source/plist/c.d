@@ -39,7 +39,7 @@ version (Windows) {
 }
 
 mixin makeBindings;
-@libplist extern (C):
+@libplist:
 
 /**
  * \mainpage libplist : A library to handle Apple Property Lists
